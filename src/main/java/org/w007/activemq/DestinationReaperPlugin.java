@@ -13,11 +13,31 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An ActiveMQ broker plugin that removes destinations matching
  * a pattern after a certain time has passed.
+ * <p/>
+ * Example of how to use this in the ActiveMQ Broker XML config file:
+ * <p/>
+ * <pre>
+ *   &lt;plugins&gt;
+ *     &lt;bean id="destinationReaperBrokerPlugin"&gt;
+ *              class="org.w007.activemq.DestinationReaperPlugin"
+ *              xmlns="http://www.springframework.org/schema/beans&gt;
+ *       &lt;property name="destination"&gt;
+ *         &lt;value&gt;staging.&gt;&lt;/value&gt;
+ *       &lt;/property&gt;
+ *       &lt;property name="timeoutMillis"&gt;
+ *         &lt;value&gt;10000&lt;/value&gt;
+ *       &lt;/property&gt;
+ *     &lt;/bean&gt;
+ *   &lt;/plugins&gt;
+ * </pre>
  *
  * @org.apache.xbean.XBean element="destinationReaperBrokerPlugin"
  */
