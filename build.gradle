@@ -1,7 +1,10 @@
 apply plugin: 'java'
-apply plugin: 'maven-publish'
+apply plugin: 'idea'
+apply from: 'signing.gradle'
+apply from: 'publishing.gradle'
 
 group = 'org.w007.activemq'
+archivesBaseName = 'activemq-destination-reaper'
 version = '0.2.1.1'
 
 repositories {
@@ -19,28 +22,17 @@ dependencies {
 }
 
 task sourceJar(type: Jar) {
+  classifier = 'sources'
   from sourceSets.main.allJava
 }
 
-task javadocJar(type: Jar) {
-  dependsOn javadoc
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier = 'javadoc'
   from javadoc.destinationDir
 }
 
-publishing {
-  publications {
-    mavenJava(MavenPublication) {
-      from components.java
-
-      artifact sourceJar {
-        classifier 'sources'
-      }
-
-      artifact javadocJar {
-        classifier 'javadoc'
-      }
-    }
-  }
+artifacts {
+  archives javadocJar, sourceJar
 }
 
 test {
