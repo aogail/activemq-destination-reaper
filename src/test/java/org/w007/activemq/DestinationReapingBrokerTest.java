@@ -14,8 +14,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.mock;
 
 public class DestinationReapingBrokerTest extends ActiveMqTestSupport {
@@ -27,19 +26,13 @@ public class DestinationReapingBrokerTest extends ActiveMqTestSupport {
 
   @Test
   public void findsMatchingDestinations() throws Exception {
-    Broker broker = startEmbeddedBroker();
-    try {
-      addQueues(broker, "queue.one", "queue.two", "other.queue.one");
-      addTopics(broker, "topic.one", "topic.two", "other.topic.one");
+    DestinationReapingBroker reapingBroker = new DestinationReapingBroker(mock(Broker.class), "queue.>", TimeUnit.SECONDS.toMillis(1));
 
-      DestinationReapingBroker reapingBroker = new DestinationReapingBroker(broker, "queue.>", TimeUnit.SECONDS.toMillis(1));
-
-      assertThat(reapingBroker.getMatchingDestinations(),
-          containsInAnyOrder((ActiveMQDestination) new ActiveMQQueue("queue.one"), new ActiveMQQueue("queue.two")));
-
-    } finally {
-      broker.stop();
-    }
+    assertThat(reapingBroker.shouldBeReaped(new ActiveMQQueue("queue.one")), is(true));
+    assertThat(reapingBroker.shouldBeReaped(new ActiveMQQueue("queue.two")), is(true));
+    assertThat(reapingBroker.shouldBeReaped(new ActiveMQQueue("other.queue.too")), is(false));
+    assertThat(reapingBroker.shouldBeReaped(new ActiveMQTopic("topic.one")), is(false));
+    assertThat(reapingBroker.shouldBeReaped(new ActiveMQTopic("queue.but.not.really")), is(true));
   }
 
   @Test
@@ -69,6 +62,28 @@ public class DestinationReapingBrokerTest extends ActiveMqTestSupport {
       };
 
       assertThat(currentDestinations, containsInAnyOrder(expectedDestinations));
+    } finally {
+      brokerService.stop();
+    }
+  }
+
+  @Test
+  public void timeoutAppliesPerDestination() throws Exception {
+    BrokerService brokerService = createEmbeddedBrokerService();
+    try {
+      brokerService.setPlugins(new BrokerPlugin[]{new DestinationReaperPlugin("queue.>", TimeUnit.SECONDS.toMillis(2))});
+      brokerService.start();
+      Broker broker = brokerService.getBroker();
+
+      addQueues(broker, "queue.gone");
+      TimeUnit.SECONDS.sleep(1);
+      addQueues(broker, "queue.present");
+      TimeUnit.MILLISECONDS.sleep(1500);
+
+      List<ActiveMQDestination> currentDestinations = Arrays.asList(broker.getDestinations());
+
+      assertThat(currentDestinations, not(contains((ActiveMQDestination) new ActiveMQQueue("queue.gone"))));
+      assertThat(currentDestinations, contains((ActiveMQDestination) new ActiveMQQueue("queue.present")));
     } finally {
       brokerService.stop();
     }
