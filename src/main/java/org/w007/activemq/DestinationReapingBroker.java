@@ -100,6 +100,10 @@ public class DestinationReapingBroker extends BrokerFilter {
     }
   }
 
+  long getDestinationTimeToLiveMillis() {
+    return destinationTimeToLive;
+  }
+
   /**
    * The destination's milliseconds are numbered.
    */
