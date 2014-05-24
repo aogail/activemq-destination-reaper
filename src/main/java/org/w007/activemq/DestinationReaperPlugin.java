@@ -3,10 +3,11 @@ package org.w007.activemq;
 
 import org.apache.activemq.broker.Broker;
 import org.apache.activemq.broker.BrokerPlugin;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.ISOPeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * An ActiveMQ broker plugin that removes destinations matching
@@ -33,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DestinationReaperPlugin implements BrokerPlugin {
   public static final Logger log = LoggerFactory.getLogger(DestinationReaperPlugin.class);
-  private volatile long destinationTimeToLive = TimeUnit.DAYS.toMillis(1);
+  private volatile Period destinationTimeToLive = new Period(1, PeriodType.days());
   private volatile String destination;
 
   public DestinationReaperPlugin() {
@@ -44,14 +45,14 @@ public class DestinationReaperPlugin implements BrokerPlugin {
    */
   DestinationReaperPlugin(String destination, long destinationTimeToLive) {
     this.destination = destination;
-    this.destinationTimeToLive = destinationTimeToLive;
+    this.destinationTimeToLive = new Period(destinationTimeToLive, PeriodType.millis());
   }
 
   @Override
   public Broker installPlugin(Broker broker) throws Exception {
     log.info("Installing Destination Reaper broker plugin for destination {} and timeout {} ms",
         destination, destinationTimeToLive);
-    return new DestinationReapingBroker(broker, destination, destinationTimeToLive);
+    return new DestinationReapingBroker(broker, destination, destinationTimeToLive.toStandardDuration().getMillis());
   }
 
   /**
@@ -60,7 +61,7 @@ public class DestinationReaperPlugin implements BrokerPlugin {
    * <p/>
    * The default is one day.
    */
-  public long getDestinationTimeToLive() {
+  public Period getDestinationTimeToLive() {
     return destinationTimeToLive;
   }
 
@@ -68,10 +69,10 @@ public class DestinationReaperPlugin implements BrokerPlugin {
    * Set the period of time for which destinations matching {@link #getDestination()}
    * will live.
    *
-   * @param destinationTimeToLive time in milliseconds
+   * @param destinationTimeToLive time in ISO8601 alternate extended format, Pyyyy-mm-ddThh:mm:ss
    */
-  public void setDestinationTimeToLive(long destinationTimeToLive) {
-    this.destinationTimeToLive = destinationTimeToLive;
+  public void setDestinationTimeToLive(String destinationTimeToLive) {
+    this.destinationTimeToLive = ISOPeriodFormat.alternateExtended().parsePeriod(destinationTimeToLive);
   }
 
   /**
