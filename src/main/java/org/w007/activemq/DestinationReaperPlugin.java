@@ -39,11 +39,15 @@ public class DestinationReaperPlugin implements BrokerPlugin {
   public DestinationReaperPlugin() {
   }
 
+  /**
+   * For use in tests.
+   */
   DestinationReaperPlugin(String destination, long destinationTimeToLive) {
     this.destination = destination;
     this.destinationTimeToLive = destinationTimeToLive;
   }
 
+  @Override
   public Broker installPlugin(Broker broker) throws Exception {
     log.info("Installing Destination Reaper broker plugin for destination {} and timeout {} ms",
         destination, destinationTimeToLive);
