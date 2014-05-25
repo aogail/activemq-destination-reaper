@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -89,4 +90,29 @@ public class DestinationReapingBrokerTest extends ActiveMqTestSupport {
     }
   }
 
+  @Test
+  public void destinationsAreUniquelyScheduledForReaping() throws Exception {
+    BrokerService brokerService = createEmbeddedBrokerService();
+    try {
+      brokerService.start();
+      DestinationReapingBroker broker = (DestinationReapingBroker)
+          new DestinationReaperPlugin("queue.>", TimeUnit.SECONDS.toMillis(2))
+              .installPlugin(brokerService.getBroker());
+
+      ActiveMQDestination queueOne = new ActiveMQQueue("queue.one");
+      ActiveMQDestination queueOneAgain = new ActiveMQQueue("queue.one");
+      ActiveMQDestination queueTwo = new ActiveMQQueue("queue.two");
+
+      addDestination(broker, queueOne);
+      addDestination(broker, queueTwo);
+      addDestination(broker, queueOneAgain);
+
+      List<ActiveMQDestination> currentDestinations = Arrays.asList(broker.getDestinations());
+      Set<ExecutionOrder> currentExecutionOrders = broker.getExecutionOrders();
+
+      assertThat(currentExecutionOrders, hasSize(2));
+    } finally {
+      brokerService.stop();
+    }
+  }
 }
