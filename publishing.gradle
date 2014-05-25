@@ -3,47 +3,44 @@ apply plugin: 'maven'
 uploadArchives {
   repositories {
     mavenDeployer {
-      if (hasProperty('ossrhUsername') && hasProperty('ossrhPassword')) {
-        beforeDeployment { signing.signPom(it) }
+      beforeDeployment { signing.signPom(it) }
 
-        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-          authentication(userName: ossrhUsername, password: ossrhPassword)
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'ActiveMQ Destination Reaper Plugin'
+        packaging 'jar'
+        description 'A plugin that allows you to set time to live for a destination'
+        url 'http://www.w007.org/'
+
+        scm {
+          connection 'scm:git:https://github.com/aogail/activemq-destination-reaper'
+          developerConnection 'scm:git:https://github.com/aogail/activemq-destination-reaper'
+          url 'https://github.com/aogail/activemq-destination-reaper'
         }
 
-        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-          authentication(userName: ossrhUsername, password: ossrhPassword)
+        licenses {
+          license {
+            name 'The Apache Software License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
         }
 
-        pom.project {
-          name 'ActiveMQ Destination Reaper Plugin'
-          packaging 'jar'
-          description 'A plugin that allows you to set time to live for a destination'
-          url 'http://www.w007.org/'
-
-          scm {
-            connection 'scm:git:https://github.com/aogail/activemq-destination-reaper'
-            developerConnection 'scm:git:https://github.com/aogail/activemq-destination-reaper'
-            url 'https://github.com/aogail/activemq-destination-reaper'
-          }
-
-          licenses {
-            license {
-              name 'The Apache Software License, Version 2.0'
-              url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-            }
-          }
-
-          developers {
-            //TODO ADD BEN
-            developer {
-              id 'rylarson'
-              name 'Ryan Larson'
-              email 'rlarson@tripwire.com'
-            }
+        developers {
+          //TODO ADD BEN
+          developer {
+            id 'rylarson'
+            name 'Ryan Larson'
+            email 'ryan.mango.larson@gmail.com'
           }
         }
       }
-      repository(url: mavenLocal().url)
     }
   }
 }
