@@ -13,8 +13,8 @@ import org.apache.activemq.filter.DestinationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -56,7 +56,7 @@ public class DestinationReapingBroker extends BrokerFilter {
    * Destinations that match the pattern are put in this queue, which {@link #reaperTask}
    * checks for expired destinations.
    */
-  private final Queue<ExecutionOrder> executionOrders;
+  private final LinkedHashSet<ExecutionOrder> executionOrders;
 
   private final Logger log = LoggerFactory.getLogger(DestinationReapingBroker.class);
 
@@ -73,7 +73,7 @@ public class DestinationReapingBroker extends BrokerFilter {
     // so we have a filter for each, with the same pattern.
     queueFilter = DestinationFilter.parseFilter(new ActiveMQQueue(pattern));
     topicFilter = DestinationFilter.parseFilter(new ActiveMQTopic(pattern));
-    executionOrders = new ArrayDeque<ExecutionOrder>();
+    executionOrders = new LinkedHashSet<ExecutionOrder>();
   }
 
   /**
@@ -118,6 +118,10 @@ public class DestinationReapingBroker extends BrokerFilter {
     return queueFilter.matches(destination) || topicFilter.matches(destination);
   }
 
+  Set<ExecutionOrder> getExecutionOrders() {
+    return executionOrders;
+  }
+
   @Override
   public void start() throws Exception {
     super.start();
@@ -154,14 +158,13 @@ public class DestinationReapingBroker extends BrokerFilter {
         final long currentTimeMillis = System.currentTimeMillis();
         final BrokerService brokerService = getBrokerService();
         synchronized (executionOrders) {
-          ExecutionOrder order;
-          while ((order = executionOrders.peek()) != null) {
-            if (order.timeToDieMillis <= currentTimeMillis) {
-              executionOrders.remove();
-              removeDestination(brokerService, order.destination);
+          for (ExecutionOrder executionOrder : executionOrders) {
+            if (executionOrder.timeToDieMillis <= currentTimeMillis) {
+              executionOrders.remove(executionOrder);
+              removeDestination(brokerService, executionOrder.destination);
             } else {
               log.debug("Order {} is in the future as of {}; delta: {}",
-                  order, currentTimeMillis, order.timeToDieMillis - currentTimeMillis);
+                  executionOrder, currentTimeMillis, executionOrder.timeToDieMillis - currentTimeMillis);
               // Elements in executionOrders are in chronological order, so we can stop looking
               // for destinations to delete once one is yet to expire.
               break;

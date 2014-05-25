@@ -15,4 +15,21 @@ class ExecutionOrder {
   public String toString() {
     return String.format("ExecutionOrder{destination=%s, timeToDieMillis=%d}", destination, timeToDieMillis);
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    ExecutionOrder that = (ExecutionOrder) o;
+
+    if (!destination.equals(that.destination)) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return destination.hashCode();
+  }
 }
