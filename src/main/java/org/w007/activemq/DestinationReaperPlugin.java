@@ -3,19 +3,9 @@ package org.w007.activemq;
 
 import org.apache.activemq.broker.Broker;
 import org.apache.activemq.broker.BrokerPlugin;
-import org.apache.activemq.broker.BrokerService;
-import org.apache.activemq.command.ActiveMQDestination;
-import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.activemq.command.ActiveMQTopic;
-import org.apache.activemq.filter.DestinationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  *       &lt;property name="destination"&gt;
  *         &lt;value&gt;staging.&gt;&lt;/value&gt;
  *       &lt;/property&gt;
- *       &lt;property name="timeoutMillis"&gt;
+ *       &lt;property name="destinationTimeToLive"&gt;
  *         &lt;value&gt;10000&lt;/value&gt;
  *       &lt;/property&gt;
  *     &lt;/bean&gt;
@@ -41,20 +31,23 @@ import java.util.concurrent.TimeUnit;
  *
  * @org.apache.xbean.XBean element="destinationReaperBrokerPlugin"
  */
-public class DestinationReaperPlugin implements BrokerPlugin, Runnable {
+public class DestinationReaperPlugin implements BrokerPlugin {
   public static final Logger log = LoggerFactory.getLogger(DestinationReaperPlugin.class);
-  private volatile long timeoutMillis = TimeUnit.DAYS.toMillis(1);
+  private volatile long destinationTimeToLive = TimeUnit.DAYS.toMillis(1);
   private volatile String destination;
-  private volatile Broker broker;
-  private volatile ScheduledExecutorService scheduler = createScheduler();
-  private ScheduledFuture<?> task;
+
+  public DestinationReaperPlugin() {
+  }
+
+  DestinationReaperPlugin(String destination, long destinationTimeToLive) {
+    this.destination = destination;
+    this.destinationTimeToLive = destinationTimeToLive;
+  }
 
   public Broker installPlugin(Broker broker) throws Exception {
     log.info("Installing Destination Reaper broker plugin for destination {} and timeout {} ms",
-        destination, timeoutMillis);
-    this.broker = broker;
-    scheduleReaping();
-    return broker;
+        destination, destinationTimeToLive);
+    return new DestinationReapingBroker(broker, destination, destinationTimeToLive);
   }
 
   /**
@@ -63,18 +56,18 @@ public class DestinationReaperPlugin implements BrokerPlugin, Runnable {
    * <p/>
    * The default is one day.
    */
-  public long getTimeoutMillis() {
-    return timeoutMillis;
+  public long getDestinationTimeToLive() {
+    return destinationTimeToLive;
   }
 
   /**
    * Set the period of time for which destinations matching {@link #getDestination()}
    * will live.
    *
-   * @param timeoutMillis time in milliseconds
+   * @param destinationTimeToLive time in milliseconds
    */
-  public void setTimeoutMillis(long timeoutMillis) {
-    this.timeoutMillis = timeoutMillis;
+  public void setDestinationTimeToLive(long destinationTimeToLive) {
+    this.destinationTimeToLive = destinationTimeToLive;
   }
 
   /**
@@ -89,46 +82,5 @@ public class DestinationReaperPlugin implements BrokerPlugin, Runnable {
    */
   public String getDestination() {
     return destination;
-  }
-
-  @Override
-  public void run() {
-    try {
-      BrokerService brokerService = broker.getBrokerService();
-      for (ActiveMQDestination toReap : getMatchingDestinations()) {
-        try {
-          brokerService.removeDestination(toReap);
-        } catch (Exception e) {
-          log.error("Could not remove destination {}: .", toReap, e.getMessage());
-          log.debug("Stack trace", e);
-        }
-      }
-    } catch (Exception e) {
-      log.error("Error while finding destinations to reap: {}", e.getMessage());
-      log.debug("Stack trace", e);
-    }
-  }
-
-  List<ActiveMQDestination> getMatchingDestinations() throws Exception {
-    DestinationFilter queueFilter = DestinationFilter.parseFilter(new ActiveMQQueue(destination));
-    DestinationFilter topicFilter = DestinationFilter.parseFilter(new ActiveMQTopic(destination));
-    List<ActiveMQDestination> matching = new ArrayList<ActiveMQDestination>();
-    for (ActiveMQDestination activeDestination : broker.getDestinations()) {
-      if (queueFilter.matches(activeDestination) || topicFilter.matches(activeDestination)) {
-        matching.add(activeDestination);
-      }
-    }
-    return matching;
-  }
-
-  private void scheduleReaping() {
-    // The unit tests install the plugin more than once, so we cancel any outstanding task now.
-    if (task != null)
-      task.cancel(true);
-    task = scheduler.scheduleAtFixedRate(this, timeoutMillis, timeoutMillis, TimeUnit.MILLISECONDS);
-  }
-
-  private ScheduledExecutorService createScheduler() {
-    return Executors.newSingleThreadScheduledExecutor();
   }
 }
