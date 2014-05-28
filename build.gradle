@@ -1,4 +1,8 @@
 apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group = 'org.w007.activemq'
+version = '0.1.0'
 
 repositories {
   mavenCentral()
@@ -12,6 +16,14 @@ dependencies {
   testCompile 'org.mockito:mockito-core:+'
   testCompile 'org.hamcrest:hamcrest-library:+'
   testRuntime 'ch.qos.logback:logback-classic:+'
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
 }
 
 test {
