@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 
 group = 'org.w007.activemq'
-version = '0.2.1.1'
+version = '0.3.0'
 
 repositories {
   mavenCentral()
