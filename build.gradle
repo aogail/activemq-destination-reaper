@@ -18,10 +18,27 @@ dependencies {
   testRuntime 'ch.qos.logback:logback-classic:+'
 }
 
+task sourceJar(type: Jar) {
+  from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+  dependsOn javadoc
+  from javadoc.destinationDir
+}
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
+
+      artifact sourceJar {
+        classifier 'sources'
+      }
+
+      artifact javadocJar {
+        classifier 'javadoc'
+      }
     }
   }
 }
