@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 
 group = 'org.w007.activemq'
-version = '0.2.1.1'
+version = '0.3.0'
 
 repositories {
   mavenCentral()
@@ -11,6 +11,7 @@ repositories {
 dependencies {
   compile 'org.slf4j:slf4j-api:+'
   compile group: 'org.apache.activemq', name: 'activemq-broker', version: '5.9.+'
+  compile group: 'joda-time', name: 'joda-time', version: '+'
 
   testCompile 'org.testng:testng:+'
   testCompile 'org.mockito:mockito-core:+'
