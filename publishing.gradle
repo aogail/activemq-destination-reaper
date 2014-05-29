@@ -1,23 +1,29 @@
 apply plugin: 'maven'
 
+boolean publishToSonatype = hasProperty('ossrhUsername') && hasProperty('ossrhPassword')
+
 uploadArchives {
   repositories {
     mavenDeployer {
       beforeDeployment { signing.signPom(it) }
 
-      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
-      }
+      if (publishToSonatype) {
+        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+          authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
 
-      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
+        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+          authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+      } else {
+        repository(url: mavenLocal().url)
       }
 
       pom.project {
         name 'ActiveMQ Destination Reaper Plugin'
         packaging 'jar'
         description 'A plugin that allows you to set time to live for a destination'
-        url 'http://www.w007.org/'
+        url 'http://w007.org/'
 
         scm {
           connection 'scm:git:https://github.com/aogail/activemq-destination-reaper'
@@ -33,14 +39,19 @@ uploadArchives {
         }
 
         developers {
-          //TODO ADD BEN
           developer {
             id 'rylarson'
             name 'Ryan Larson'
             email 'ryan.mango.larson@gmail.com'
+          }
+          developer {
+            id 'aogail'
+            name 'Ben Jansen'
+            email 'aogail@w007.org'
           }
         }
       }
     }
   }
 }
+
