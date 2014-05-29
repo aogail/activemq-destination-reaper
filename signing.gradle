@@ -1,0 +1,7 @@
+apply plugin: 'signing'
+
+if (signing.hasProperty('keyId') && signing.hasProperty('password') && signing.hasProperty('secretKeyRingFile')) {
+  signing {
+    sign configurations.archives
+  }
+}
